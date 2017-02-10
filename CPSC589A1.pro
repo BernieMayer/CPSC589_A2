@@ -38,7 +38,8 @@ DEFINES += QT_DEPRECATED_WARNINGS
 SOURCES += main.cpp\
         mainwindow.cpp \
         renderer.cpp \
-        camera.cpp
+        camera.cpp \
+    bsplinegenerator.cpp
 
 OTHER_FILES += \
 SimpleVertexShader.vertexshader \
@@ -52,7 +53,8 @@ SimpleFragmentShader.fragmentshader
 
 HEADERS  += mainwindow.h \
     renderer.h \
-    camera.h
+    camera.h \
+    bsplinegenerator.h
 
 
 FORMS    += mainwindow.ui
