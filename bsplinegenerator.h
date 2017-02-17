@@ -17,21 +17,25 @@ public:
                      vector <vec2> controlPoints,
                      vector <float> knotSequence);
 
-    void addControlPoint(vector<vec2> aPoint);
+    vector<vec3> getControlPoints();
+    int getNumberOfControlPoints();
+
+    void addControlPoint(vec3 aPoint);
 
     int delta(double u, int m, int k);
 
-    vec2 E_delta_1(double u, int m, int k);
+    vec3 E_delta_1(double u, int m, int k);
 
     void generateGraph(double u_step);
     void generateGraph();
 
     vector<vec3> graphData;
+    int selected = -1;
 private:
     int k; //order of the curve
     double u_inc; //User control over incrementation
 
-    vector<vec2> controlPoints;
+    vector<vec3> controlPoints;
     vector<float> knotSequence;
 
 

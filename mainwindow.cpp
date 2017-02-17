@@ -11,7 +11,7 @@ MainWindow::MainWindow(QWidget *parent) :
 
 
 
-    renderer = new Renderer();
+    renderer = new Renderer(parent);
     layout->addWidget(renderer);
 
     ui->setupUi(this);

@@ -6,10 +6,20 @@
 Renderer::Renderer(QWidget *parent)
     : QOpenGLWidget(parent)
 {
+
     grabKeyboard();
 
     activeCamera = new Camera(vec3(0,0, -1), vec3(0.31649,-0.564746,4.26627));
+    bsplineGeometry = new BSplineGenerator();
 
+//    /w = parent->width();
+    //h = parent->height();
+}
+
+Renderer::~Renderer()
+{
+    delete activeCamera;
+    delete bsplineGeometry;
 }
 
 void Renderer::setBig_R_value(double R)
@@ -174,6 +184,7 @@ void Renderer :: initializeGL()
 
     programID = LoadShaders( "SimpleVertexShader.vertexshader", "SimpleFragmentShader.fragmentshader" );
 
+
     r = 1.0;
     R = 3.0;
 
@@ -206,13 +217,26 @@ void Renderer :: initializeGL()
 
     glGenBuffers(1, &graphVbo);
     glBindBuffer(GL_ARRAY_BUFFER, graphVbo);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vec3) * graphLines.size(), graphLines.data(), GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(vec3) * graphLines.size(),
+                 graphLines.data(), GL_STATIC_DRAW);
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, NULL);
     glEnableVertexAttribArray(0);
 
-    m_pGameTimer = new QTimer();
-    connect(m_pGameTimer, SIGNAL(timeout()), this, SLOT(update()));
-    m_pGameTimer->start(33); // 33 ms
+
+    glGenVertexArrays(1, &pointsVao);
+    glBindVertexArray(pointsVao);
+
+    glGenBuffers(1, &pointsVbo);
+    glBindBuffer(GL_ARRAY_BUFFER, pointsVbo);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(vec3) * bsplineGeometry->getNumberOfControlPoints(),
+                 bsplineGeometry->getControlPoints().data(), GL_STATIC_DRAW);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, NULL);
+    glEnableVertexAttribArray(0);
+
+
+    timer = new QTimer();
+    connect(timer, SIGNAL(timeout()), this, SLOT(update()));
+    timer->start(33); // 33 ms
 }
 
 void Renderer :: paintGL()
@@ -228,7 +252,8 @@ void Renderer :: paintGL()
 
     glBindBuffer(GL_ARRAY_BUFFER, graphVbo);
 
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vec3) * graphLines.size(), graphLines.data(), GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(vec3) * graphLines.size(),
+                 graphLines.data(), GL_STATIC_DRAW);
 
     glm::mat4x4 perpectiveMatrix = winRatio * perspective * activeCamera->getMatrix();
 
@@ -241,22 +266,39 @@ void Renderer :: paintGL()
                        &perpectiveMatrix[0][0]);
 
 
-    if (animation) {
-        glDrawArrays(GL_LINE_STRIP, 0, t);
-        t++;
-        if (t > graphLines.size()) {
-            animation = false;
-        }
-    }else {
-        glDrawArrays(GL_LINE_STRIP, 0, graphLines.size());
-    }
-    //glDisableVertexAttribArray(0);
+
+    glDrawArrays(GL_LINE_STRIP, 0, graphLines.size());
+
     glBindVertexArray(0);
+
+    glBindVertexArray(pointsVao);
+
+    glUseProgram(programID);
+
+    glBindBuffer(GL_ARRAY_BUFFER, pointsVbo);
+
+    glBufferData(GL_ARRAY_BUFFER, sizeof(vec3) * bsplineGeometry->getControlPoints().size(),
+                 bsplineGeometry->getControlPoints().data(),GL_STATIC_DRAW);
+
+
+
+    glUniformMatrix4fv(glGetUniformLocation(programID, "modelviewMatrix"), 1,
+                    false, &modelview[0][0]);
+
+    glUniformMatrix4fv(glGetUniformLocation(programID, "perspectiveMatrix" ), 1,
+                       false,
+                       &perpectiveMatrix[0][0]);
+
+    glDrawArrays(GL_POINTS, 0, bsplineGeometry->getNumberOfControlPoints());
+    glBindVertexArray(0);
+
+
+
 
     //glBindVertexArray(0);
 
         // Swap buffers
-        //glfwSwapBuffers();
+   //glfwSwapBuffers();
         //glfwPollEvents();
 
 
@@ -281,7 +323,7 @@ void Renderer:: resizeGL(int w, int h)
     glLoadIdentity();
     gluLookAt(0,0,0,0,0,0,0,1,0);
 
-    paintGL();
+    //paintGL();
 }
 
 void Renderer::keyReleaseEvent(QKeyEvent *event)
@@ -336,12 +378,41 @@ void Renderer::keyPressEvent(QKeyEvent *event)
 // override mouse press event
 void Renderer::mousePressEvent(QMouseEvent * event)
 {
+
+    bsplineGeometry->selected = -1;
+
+    double x = (2 * ((double) event->x())/((double) this->window()->width() ) -1);
+    double y = (-2 * ((double) event->y())/((double) this->window()->height()) + 1);
+
+    vector<vec3> controlPoints = bsplineGeometry->getControlPoints();
+    for (int i = 0; i < controlPoints.size(); i++)
+    {
+        if (abs(controlPoints.at(i).x - x) <= cRadius
+                && abs(controlPoints.at(i).y - y) <= cRadius)
+        {
+            bsplineGeometry->selected = i;
+            std::cout <<  bsplineGeometry->selected << endl;
+        }
+    }
+
+    if (event->button() == Qt::LeftButton)
+    {
+        if (bsplineGeometry->selected = -1)
+            bsplineGeometry->addControlPoint(vec3(x * this->window()->width(),
+                                                  y * this->window()->height(),0));
+    }
+
     if (event->button() == Qt::RightButton)
     {
-        rightMousePressed =true;
+        if (bsplineGeometry->selected != -1)
+        {
+            //remove the control point
+        }
+    }
 
-
-
+    if (event->button() == Qt::RightButton)
+    {
+     rightMousePressed =true;
     } else if (event->button()== Qt::LeftButton)
     {
         leftMousePressed = true;

@@ -24,35 +24,46 @@ BSplineGenerator::BSplineGenerator( int k,
 
 }
 
-void BSplineGenerator::addControlPoint(vector<vec2> aPoint)
+vector<vec3> BSplineGenerator::getControlPoints()
+{
+    return controlPoints;
+}
+
+int BSplineGenerator::getNumberOfControlPoints()
+{
+    return controlPoints.size();
+}
+
+void BSplineGenerator::addControlPoint(vec3 aPoint)
 {
     controlPoints.push_back(aPoint);
+    //update the knot sequence
 }
 
 int BSplineGenerator::delta(double u, int m, int k)
 {
     for (int i = 0; i < (m + k -1); i++)
     {
-        if (u >=knotSequence.at(i) u < knotSequence.at(i + 1))
+        if (u >=knotSequence.at(i) && u < knotSequence.at(i + 1))
                    return i;
     }
 }
 
-vec2 BSplineGenerator::E_delta_1(double u, int m, int k)
+vec3 BSplineGenerator::E_delta_1(double u, int m, int k)
 {
     int d = delta(u, m,k);  //determines the delta..
-    vector<vec2> c;
-    int i
-    for (i = 0; i < k - 1; i++)
+    vector<vec3> c;
+    int i;
+    for (i = 0; i < (k - 1); i++){
         c.push_back(controlPoints.at(d - i));
-
+    }
 
     for (int r = k; r < 2; r--)
     {
         for (int s = 0; s <(r -2); s++){
-            double omega = (u - controlPoints.at(i))/(controlPoints.at(U + r -1)
-                                                  - controlPoints.at(i));
-            c.at(s) = omega * c.at(s) + (1 - omega) * c.at(s +1);
+            float omega = (u - knotSequence.at(i))/(knotSequence.at(u + r -1)
+                                                  - knotSequence.at(i));
+            c.at(s) = omega * c.at(s) + (1 - omega) * c.at(s + 1);
             i = i - 1;
         }
     }
@@ -66,7 +77,7 @@ void BSplineGenerator::generateGraph(double u_step)
    double u = 0;
    while( u < 1)
    {
-        vec2 point = E_delta_1(u, controlPoints.size(), k);
+        vec3 point = E_delta_1(u, controlPoints.size(), k);
         graphData.push_back(point);
         u += 0.1;
    }

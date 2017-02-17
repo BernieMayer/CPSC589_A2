@@ -1,6 +1,7 @@
 #ifndef RENDERER_H
 #define RENDERER_H
 
+#include "bsplinegenerator.h"
 #include "camera.h"
 
 #include <QWidget>
@@ -59,12 +60,18 @@ public:
     // constructor
     Renderer(QWidget *parent = 0);
 
+    //destructor
+    ~Renderer();
     void setBig_R_value(double R);
     void setSmall_r_value(double r);
     void setN_value(double n);
     void redrawGraph();
 
     int t = 0;
+
+    int w, h;
+
+    int cRadius = 0.01;
 
 protected:
     // override fundamental drawing functions
@@ -95,10 +102,17 @@ protected:
 private:
     Camera* activeCamera;
     GLuint programID;
+
+
     GLuint graphVbo;
     GLuint graphVao;
+
+    GLuint pointsVbo;
+    GLuint pointsVao;
+
     double R,r;
     int n;
+
     std::vector<glm::vec3> graphLines;
     glm::mat4 winRatio = mat4(1.f);
     glm::mat4 perspective = glm::perspective(radians(80.f), 1.f, 0.1f, 30.f);
@@ -107,10 +121,12 @@ private:
     glm::vec2 mousePos;
     bool leftMousePressed = false;
     bool rightMousePressed = false;
-    bool animation = true;
+    bool animation = false;
 
 
-    QTimer *m_pGameTimer;
+    QTimer *timer;
+
+    BSplineGenerator *bsplineGeometry;
 
     void generateGraph(float theta, int n, float angleMultiplier);
 };
